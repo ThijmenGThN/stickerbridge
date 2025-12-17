@@ -1,28 +1,44 @@
 # StickerBridge
 
-Convert Telegram sticker packs to Signal-ready format with ease.
+Convert your favorite Telegram sticker packs to Signal in seconds.
 
-## What It Does
+<p align="center">
+  <img src="public/HowTo.gif" alt="StickerBridge Demo">
+</p>
 
-Paste a Telegram sticker pack URL, click convert, and download a ZIP file ready to import into Signal Desktop.
 
-```
-Telegram Sticker Pack → StickerBridge → ZIP File → Import to Signal
-```
 
-## Features
+## What is StickerBridge?
 
-- **No accounts required** - Just paste a URL and download
-- **Animated sticker support** - Converts TGS (Telegram animated) to APNG (Signal format)
-- **Optimized for Signal** - Auto-compresses to meet Signal's 300KB limit
-- **Real-time progress** - WebSocket-powered progress updates
-- **Self-hostable** - Run your own instance with Docker
+StickerBridge is a simple web app that converts Telegram sticker packs to a format compatible with Signal. Just paste a link, click convert, and download your stickers — no accounts or technical knowledge required.
 
-## Quick Start
+
+
+### Key Features
+
+- **One-Click Conversion** — Paste a Telegram sticker URL and download a ready-to-import ZIP
+- **Animated Sticker Support** — Converts animated TGS stickers to Signal-compatible APNG
+- **Optimized Output** — Automatically compresses stickers to meet Signal's 300KB limit
+- **Self-Hostable** — Run your own instance with Docker
+
+
+
+## How to Use
+
+1. Find a Telegram sticker pack you want to convert
+2. Copy its URL (e.g., `https://t.me/addstickers/PackName`)
+3. Paste the URL into StickerBridge and click **Convert**
+4. Download the ZIP file once conversion completes
+5. Open Signal Desktop → `File` → `Create/Upload Sticker Pack`
+6. Import your stickers and enjoy!
+
+
+
+## Getting Started
 
 ### Prerequisites
 
-- [Docker](https://www.docker.com/get-started) and Docker Compose
+- [Docker](https://www.docker.com/get-started) with Docker Compose
 - A Telegram Bot Token (get one from [@BotFather](https://t.me/BotFather))
 
 ### Setup
@@ -43,35 +59,44 @@ Telegram Sticker Pack → StickerBridge → ZIP File → Import to Signal
    TELEGRAM_BOT_TOKEN=your_bot_token_here
    ```
 
-3. **Start the services**
+3. **Start StickerBridge**
    ```bash
    docker compose up -d
    ```
 
-4. **Open your browser**
+4. **Open your browser** at [http://localhost:3000](http://localhost:3000)
 
-   Visit [http://localhost:3000](http://localhost:3000)
 
-## Usage
-
-1. Find a Telegram sticker pack you want to convert
-2. Copy the sticker pack URL (e.g., `https://t.me/addstickers/PackName`)
-3. Paste it into StickerBridge
-4. Click **Convert**
-5. Wait for conversion to complete
-6. Click **Download ZIP**
-7. Import to Signal Desktop: `File → Create/Upload Sticker Pack`
 
 ## Supported URL Formats
 
-```
-https://t.me/addstickers/{pack_name}
-https://telegram.me/addstickers/{pack_name}
-https://telegram.dog/addstickers/{pack_name}
-tg://addstickers?set={pack_name}
-```
+| Format | Example |
+|--------|---------|
+| t.me | `https://t.me/addstickers/PackName` |
+| telegram.me | `https://telegram.me/addstickers/PackName` |
+| telegram.dog | `https://telegram.dog/addstickers/PackName` |
+| tg:// | `tg://addstickers?set=PackName` |
 
-## Architecture
+
+
+## Limitations
+
+- Only public sticker packs are supported
+- Animated stickers may lose some quality to meet Signal's size limits
+- Custom emoji packs are not supported (stickers only)
+
+
+
+## Credits
+
+Conversion logic inspired by [sticker-convert](https://github.com/laggykiller/sticker-convert).
+
+
+
+<details>
+<summary><strong>Development & Contributing</strong></summary>
+
+### Project Structure
 
 ```
 StickerBridge/
@@ -97,10 +122,41 @@ StickerBridge/
 | Frontend | Next.js 15, React 19, Tailwind CSS v4, shadcn/ui |
 | Backend | FastAPI, Python 3.11 |
 | Conversion | rlottie-python, apngasm-python, Pillow |
-| Real-time | WebSocket (native FastAPI) |
+| Real-time | WebSocket |
 | Container | Docker, Docker Compose |
 
-## API Endpoints
+### Development Commands
+
+**Frontend**
+```bash
+npm install              # Install dependencies
+npm run dev              # Start dev server (port 3000)
+npm run build            # Build for production
+npm run lint             # Check code with Biome
+npm run lint:fix         # Auto-fix linting issues
+```
+
+**Backend**
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+**Full Stack (Docker)**
+```bash
+docker compose up --build    # Build and start all services
+docker compose down          # Stop services
+```
+
+### Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `TELEGRAM_BOT_TOKEN` | Telegram Bot API token | Yes |
+| `NEXT_PUBLIC_API_URL` | Backend API URL (default: http://localhost:8000) | No |
+
+### API Reference
 
 ```
 POST /api/convert
@@ -108,72 +164,29 @@ POST /api/convert
   Response: { "job_id": "uuid" }
 
 GET /api/jobs/{job_id}
-  Response: {
-    "status": "queued" | "downloading" | "converting" | "zipping" | "completed" | "failed",
-    "progress": { "current": 5, "total": 30, "message": "Converting sticker 5/30" },
-    "result": { "download_url": "/api/download/uuid", "pack_name": "...", "sticker_count": 30 }
-  }
+  Response: { "status": "...", "progress": {...}, "result": {...} }
 
 GET /api/download/{job_id}
   Response: ZIP file
 
 WS /ws/jobs/{job_id}
-  Messages: progress updates, completion, or failure notifications
+  Messages: JSON progress updates
 ```
 
-## Development
+### How Conversion Works
 
-### Frontend Only
+1. **Download** — Fetches sticker pack metadata and files via Telegram Bot API
+2. **Detect Format** — Identifies static (WebP/PNG) vs animated (TGS) stickers
+3. **Convert** — Static: WebP → PNG (512x512) | Animated: TGS → APNG (optimized for 300KB)
+4. **Package** — Creates ZIP with numbered files ready for Signal import
 
-```bash
-npm install
-npm run dev
-```
+### Contributing
 
-The frontend runs on [http://localhost:3000](http://localhost:3000).
+Found a bug or have an idea? [Open an issue](https://github.com/yourusername/StickerBridge/issues) — contributions are welcome!
 
-### Backend Only
+</details>
 
-```bash
-cd backend
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
-```
 
-The backend runs on [http://localhost:8000](http://localhost:8000).
-
-### Full Stack (Docker)
-
-```bash
-docker compose up --build
-```
-
-## Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELEGRAM_BOT_TOKEN` | Telegram Bot API token | Yes |
-| `NEXT_PUBLIC_API_URL` | Backend API URL (default: http://localhost:8000) | No |
-
-## How Conversion Works
-
-1. **Download**: Fetches sticker pack metadata and files via Telegram Bot API
-2. **Detect Format**: Identifies static (WebP/PNG) vs animated (TGS) stickers
-3. **Convert**:
-   - Static: WebP → PNG (resized to 512x512)
-   - Animated: TGS → APNG using rlottie (binary search for optimal quality under 300KB)
-4. **Package**: Creates ZIP with numbered files and emoji mapping
-
-## Limitations
-
-- Only public sticker packs are supported
-- Maximum pack size limited by Telegram API
-- Animated stickers may lose some quality to meet Signal's 300KB limit
-- Custom emoji packs not supported (stickers only)
-
-## Credits
-
-Conversion logic inspired by [sticker-convert](https://github.com/laggykiller/sticker-convert).
 
 ## License
 
